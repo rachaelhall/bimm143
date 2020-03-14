@@ -1,0 +1,114 @@
+---
+title: '16'
+author: "Rachael Hall"
+date: "2/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+data source : Trapnell C, Hendrickson DG, Sauvageau M, Goff L et al. "Differential analysis of gene regulation at transcript resolution with RNA-seq". Nat Biotechnol 2013 Jan;31(1):46-53. PMID: 23222703
+## import RNA-Seq counts and metadata 
+
+```{r}
+metaFile <- "GSE37704_metadata.csv"
+countFile <- "GSE37704_featurecounts.csv"
+colData = read.csv(metaFile, row.names = 1)
+countData = read.csv(countFile, row.names = 1)
+head(colData)
+head(countData)
+```
+
+```{r}
+countData <- as.matrix(countData[,-1])
+head(countData)
+```
+
+remove genes w no data / 0 counts in allll experiments 
+```{r}
+countData <- countData[rowSums(countData) != 0, ]
+```
+
+check how many genes we have remaining 
+```{r}
+nrow(countData)
+```
+run DESeq2 
+```{r}
+library(DESeq2)
+dds = DESeqDataSetFromMatrix(countData=countData,
+                             colData=colData,
+                             design=~condition)
+dds = DESeq(dds)
+```
+
+```{r}
+res <- results(dds)
+res
+```
+plot results / volcano plot 
+```{r}
+plot(res$log2FoldChange, -log(res$padj))
+abline(h= -log(0.05), col = "pink")
+abline(v= c(-2, 2), col = "pink")
+mycols <- rep("gray", nrow(res) )
+mycols[ abs(res$log2FoldChange) > 2 ] <- "red"
+```
+```{r}
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+
+columns(org.Hs.eg.db)
+```
+```{r}
+res$symbol = mapIds(org.Hs.eg.db,
+                    keys=row.names(res), 
+                    keytype="ENSEMBL",
+                    column= "SYMBOL",
+                    multiVals="first")
+res$entrez = mapIds(org.Hs.eg.db,
+                    keys=row.names(res),
+                    keytype="ENSEMBL",
+                    column="ENTREZID",
+                    multiVals="first")
+head(res)
+```
+
+```{r}
+library(pathview)
+library(gage)
+library(gageData)
+
+data(kegg.sets.hs)
+data(sigmet.idx.hs)
+
+kegg.sets.hs = kegg.sets.hs[sigmet.idx.hs]
+head(kegg.sets.hs, 3)
+```
+
+```{r}
+foldchanges = res$log2FoldChange
+names(foldchanges) = res$entrez
+head(foldchanges)
+```
+## run gage with this input vector and kegg gene setss 
+```{r}
+keggres = gage(foldchanges, gsets=kegg.sets.hs)
+```
+# wat the results?? use attributes() to see what is returned 
+```{r}
+attributes(keggres)
+```
+```{r}
+head(keggres$less)
+```
+```{r}
+pathview(gene.data=foldchanges, pathway.id="hsa04110")
+```
+```{r}
+knitr::include_graphics("hsa04110.pathview.png")
+```
+
