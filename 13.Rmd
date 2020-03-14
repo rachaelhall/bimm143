@@ -1,0 +1,55 @@
+---
+title: "class 13"
+author: "Rachael Hall"
+date: "2/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## download & clean HIV-Pr receptor structure 
+we will download the 1HSG PBD structure from the online database, remove the found drug from Merk and write out a protein only and ligand only new set of PDB files.
+
+use the **bio3d package** functions `get.pbd()`, `read.pbd()`, `atom.select()`, and `write.pbd()`
+
+```{r}
+library(bio3d)
+file <- get.pdb("1HSG")
+```
+```{r}
+pdb <- read.pdb(file)
+pdb
+```
+## select protein only 
+```{r}
+prot <- atom.select(pdb, "protein", value = TRUE)
+write.pdb(prot, file="1HSG_protein.pbd")
+```
+## select ligand onkly 
+```{r}
+lig <- atom.select(pdb, "ligand", value = TRUE)
+write.pdb(prot, file="1HSG_ligand.pbd")
+```
+```{r}
+lig
+```
+```{r}
+library(bio3d)
+res <- read.pdb("all.pdbqt", multi=TRUE)
+write.pdb(res, "results.pdb")
+```
+
+```{r}
+library(bio3d)
+res <- read.pdb("all.pdbqt", multi=TRUE)
+write.pdb(res, "results.pdb")
+```
+```{r}
+# res <- read.pdb("all.pdbqt", multi=TRUE)
+ori <- read.pdb("ligand.pdbqt")
+rmsd(ori, res)
+```
+
+
