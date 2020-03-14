@@ -1,0 +1,97 @@
+---
+title: '18'
+author: "Rachael Hall"
+date: "3/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(GenomicDataCommons)
+library(TCGAbiolinks)
+library(maftools)
+```
+
+```{r}
+status()
+```
+```{r}
+c(1:10) %>% mean()
+```
+
+```{r}
+cases_by_project <- cases() %>%
+  facet("project.project_id") %>%
+  aggregations()
+head(cases_by_project)
+```
+
+```{r}
+x <- cases_by_project$project.project_id
+barplot(x$doc_count, names.arg = x$key, las = 2)
+#barplot(cases_by_project$doc_count, names.arg=___, log="y", col=colvec, las=2)
+```
+
+```{r}
+maf.file <- GDCquery_Maf(tumor="PAAD", pipelines = "mutect")
+```
+```{r}
+plotmafSummary(vars)
+```
+
+
+
+# part 2 
+
+```{r}
+seq.file <- "lecture18_sequences.fa"
+library(bio3d)
+
+seqs <- read.fasta(seq.file)
+seqs
+```
+
+```{r}
+ide <- conserv(seqs$ali, method="identity")
+mutant.sites <- which(ide < 1) 
+
+gaps <- gap.inspect(seqs)
+mutant.sites <- mutant.sites[mutant.sites %in% gaps$f.inds]
+
+mutant.sites
+```
+
+```{r}
+c(1:6) -> x 
+y <- c(1:4)
+x %in% y 
+```
+
+find the +8 and - 8 
+```{r}
+start.pos <- mutant.sites - 8
+end.pos <- mutant.sites + 8
+```
+```{r}
+aln$ali[,start.pos[1]:end.pos[1]]
+```
+```{r}
+write.fasta(store.seqs, ids= mutant.names, file = "mutantseqs.faq")
+```
+
+```{r}
+# Blank matrix to store sub-sequences
+store.seqs <- matrix("-", nrow=length(mutant.sites), ncol=17)
+rownames(store.seqs) <- mutant.names
+
+## Extract each sub-sequence
+for(i in 1:length(mutant.sites)) {
+  store.seqs[i,] <- seqs$ali["P53_mutant",start.position[i]:end.position[i]]
+}
+
+store.seqs
+```
+
